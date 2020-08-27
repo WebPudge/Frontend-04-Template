@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-cmn-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .board{
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 300px;
+      height: 300px;
+      margin: auto;
+      font-size: 0;
+    }
+    .cell {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 100px;
+      height: 100px;
+      font-size: 50px;
+      text-align: center;
+      line-height: 100px;
+      vertical-align: middle;
+      border: 1px solid #fff;
+      background-color: antiquewhite;
+    }
+  </style>
+</head>
+<body>
+  <div class="board"></div>
+  <script>
+    const pattern = [
+      0,2,0,
+      0,1,0,
+      0,0,0,
+    ]
+    const row = 3;
+    const col = 3;
+
+    let color = 1;
+
+    /**
+     * 渲染棋盘
+     */
+    function show(){
+      const board = document.getElementsByClassName('board')[0];
+      board.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      for(let i = 0, len = row*col; i < len;i ++){
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.innerText = pattern[i] === 2 ? '🌚':
+                        pattern[i] === 1? '🌝': '';
+        cell.addEventListener('click',() => {userMove(i)})
+        fragment.appendChild(cell)
+      }
+      board.appendChild(fragment);
+    }
+
+    /**
+     * 落子
+     */
+    function move(index){
+      pattern[index] = color;
+      if(check(pattern,color)){
+        alert(color === 2? '🌚 Win!':'🌝 Win!');
+      }
+      color = 3 - color;
+      show();
+    }
+
+    /**
+     * 用户落子
+     */
+    function userMove(index){
+      move(index);
+      aiMove();
+    }
+
+    /**
+     * 机器落子
+     */
+    function aiMove(){
+      const index = bestChoice(pattern,color).index;
+      if(index){
+        move(index[0])
+      }
+    }
+
+    /**
+     * clone
+     */
+    function clone(pattern){
+      return Object.create(pattern);
+    }
+
+    /**
+     * 检查胜负
+     */
+     function check(pattern, color){
+      //  行列有限 计数检查
+       const countObj = {
+        row1Count:0, // 行检查
+        row2Count:0,
+        row3Count:0, 
+        col1Count:0, // 列检查 
+        col2Count:0, 
+        col3Count:0, 
+        slashCount: 0, // 斜杠检查
+        backslashCount:0 // 反斜杠检查
+       }
+       const counter = count => count ===3?true:false;
+
+      for(let i = 0, len = pattern.length;i< len; i++){
+        if(pattern[i] === color){
+          const curRow = (i%col)+1;
+          const curCol = Math.floor(i/col)+1;
+          // 横向计数
+          countObj[`row${curRow}Count`] +=1;
+          // 检查
+          if(counter(countObj[`row${curRow}Count`])){
+            return true
+          }
+          // 纵向计数
+          countObj[`col${curCol}Count`] +=1;
+          // 检查
+          if(counter(countObj[`col${curCol}Count`])){
+            return true
+          }
+          // 斜杠方向计数
+          if(curRow === curCol){
+            countObj.backslashCount +=1;
+          }
+           // 检查
+           if(counter(countObj.backslashCount)){
+            return true
+          }
+          // 反斜杠方向计数
+          if(curRow === (col - curCol + 1)){
+            countObj.slashCount +=1;
+          }
+           // 检查
+           if(counter(countObj.slashCount)){
+            return true
+          }
+        }
+      }
+      return false
+    }
+
+    /**
+     * 检测是否将要获胜
+     */
+     function willWin(pattern,color){
+        for (let i = 0, len = pattern.length; i < len; i++) {
+          if(pattern[i]){
+            continue;
+          }
+          const tmp = clone(pattern);
+          tmp[i] = color;
+          if(check(tmp,color)){
+            // 防止0 false判断
+            return [i];
+          }
+        }
+        return null;
+     }
+     
+     /**
+      * 得到最佳决策
+      */
+      function bestChoice(pattern, color){
+       let index = willWin(pattern,color);
+       if(index){
+         return {
+           index,
+           result: 1,
+         }
+       }
+       let result = -2;
+       // 递归决策
+       for (let i = 0, len = pattern.length; i < len; i++) {
+          if(pattern[i]){
+            continue;
+          }
+          const tmp = clone(pattern);
+          tmp[i] = color;
+          const opp = bestChoice(tmp, 3 - color);
+        
+          if(-opp.result > result){
+            result = -opp.result;
+            index = [i];
+          }
+          if(result === 1) {
+            break;
+          }
+        }
+        
+        return {
+          index,
+          result: index? result: 0
+        }
+     }
+
+    show();
+  </script>
+</body>
+</html>
