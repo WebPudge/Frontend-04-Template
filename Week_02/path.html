@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  .container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 700px;
+    margin: 16px auto;
+  }
+  #map {
+    margin: 16px auto;
+    line-height: 7px;
+  }
+  .cell {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border: 1px solid #aaa;
+    vertical-align: top;
+  }
+  .edit-board {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+  .button {
+    margin-top: 16px;
+  }
+</style>
+<body>
+  <h1>寻路算法</h1>
+  <ul>
+    <li>点击左键画墙</li>
+    <li>shift + 左键清除墙</li>
+    <li>点击 save 保存墙</li>
+    <li>start 开始寻路</li>
+    <li>startPoint endPoint 格式 1,2</li>
+  </ul>
+  <div class="container">
+    <div id="map"></div>
+    <div class="edit-board">
+      <label for="startPoint">开始点：<input name="startPoint" oninput="getPoint(this,true)" placeholder="0,0" type="text"></label>
+      <label for="endPoint">结束点：<input name="endPoint" oninput="getPoint(this)" placeholder="50,50" type="text"></label>
+      <label for="stract">寻路算法：
+        <select name="stract" onchange="clearMap();stractSelect = this.options[this.selectedIndex].value">
+          <option value="queue">广度优先搜索</option>
+          <option value="a_star_array">A Star 搜索（数组）</option>
+          <option value="a_star_binary_heap">A Star 搜索（二叉堆）</option>
+        </select>
+        </label>
+    </div>
+    <div class="edit-board">
+      <button class="button" onclick="localStorage.setItem('map',JSON.stringify(map))">save</button>
+     
+      <button class="button" onclick="findPath(map,startPoint,endPoint)">start</button>
+    </div>
+    <div>总共的路径点数：<span id="count"></span></div>
+  </div>
+ 
+  <script>
+    let map;
+    const mapContainer = document.getElementById("map");
+    const count = document.getElementById("count");
+    let startPoint = [0,0];
+    let endPoint = [50,50];
+    let mousedown = false;
+    let clear = false;
+    let stractSelect = 'queue'
+
+    // 初始map
+    clearMap();
+    // 地图事件
+    editEvent();
+    function clearMap(){
+      mapContainer.innerHTML = "";
+      count.innerHTML = "";
+      map = JSON.parse(localStorage.getItem('map'))|| Array(10000).fill(0)
+      show();
+    }
+
+    function sleep(time){
+      return new Promise(reject => {
+        const timer = setTimeout(() => {
+          clearTimeout(timer)
+          reject();
+        },time);
+      })
+    }
+    // 显示地图
+    function show(){
+      const fragment = document.createDocumentFragment();
+      for (let i = 0; i < 10000; i++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          cell.setAttribute('i',i);
+          if(map[i]){
+            cell.style.backgroundColor = 'black'
+          }
+          fragment.appendChild(cell)
+      }
+      mapContainer.appendChild(fragment)
+    }
+    // 注册地图事件
+    function editEvent(){
+      document.addEventListener('mousedown',e=>{
+        mousedown = true
+        // 按shift清除
+        if(e.shiftKey){
+          clear=true
+        }
+      });
+      document.addEventListener('mouseup',()=> {
+        mousedown = false;
+        clear = false;
+      })
+      mapContainer.addEventListener('mousemove',e=> {
+        if(mousedown){
+          const cell = e.target
+          const index = +cell.getAttribute('i');
+          if(clear){
+            cell.style.backgroundColor = "";
+            map[index] = 0;
+          }else{
+            cell.style.backgroundColor = "black";
+            map[index] = 1;
+          }
+        }
+      } )
+    }
+
+    // 获取输入值
+    function getPoint(inputDom,isStart){
+      const text = inputDom.value
+      const [x,y] = text.split(',')
+      // 效验
+      if(x && y && (x>=0 ||  x<100) && (y>=0 ||  y<100)){
+        if(isStart){
+          startPoint = [+x, +y];
+        }else{
+          endPoint = [+x, +y];
+        }
+      }
+    }
+
+
+    /**
+     * 数据结构
+     */
+    // 队列
+    class QueueSorted {
+      constructor(data){
+        this.data = data.slice();
+      }
+      take(){
+        if(!this.data.length){
+          return;
+        }
+        const val = this.data.shift();
+        return val;
+      }
+      give(v){
+        this.data.push(v);
+      }
+      get length(){
+        return this.data.length
+      }
+    }
+    // A Star 数组版
+    class AStarArraySorted {
+      constructor(data, compare){
+        this.data = data.slice();
+        this.compare = compare || ((a,b) => a - b)
+      }
+      take(){
+        if(!this.data.length){
+          return;
+        }
+        let min = this.data[0];
+        let minIndex = 0;
+
+        for(let i=1, len=this.data.length; i<len;i++){
+          if(this.compare(this.data[i], min) < 0){
+            min = this.data[i];
+            minIndex = i;
+          }
+        }
+
+        this.data[minIndex] = this.data[this.data.length - 1];
+        this.data.pop();
+        
+        return min;
+      }
+      give(v){
+        this.data.push(v);
+      }
+
+      get length(){
+        return this.data.length
+      }
+    }
+
+    // A Star 二叉堆
+    class AStarBinaryHeapSorted {
+      constructor(data, compare){
+        this.data = data.slice();
+        this.compare = compare || ((a,b) => a - b)
+      }
+
+      getParentIndex(i){
+        return Math.floor((i-1)/2)
+      }
+
+      getLeftIndex(i){
+        return Math.floor(i*2+1)
+      }
+
+      getRightIndex(i){
+        return Math.floor(i*2+2)
+      }
+
+      take(){
+        if(!this.data.length){
+          return;
+        }
+        const min = this.data[0];
+        let i = 0;
+        this.data[0] = this.data[this.data.length - 1]
+        this.data.pop();
+        
+        // 左子树存在则交换
+        while(this.data[this.getLeftIndex(i)]){
+          let smallerChildIndex = this.getLeftIndex(i);
+          const rightIndex = this.getRightIndex(i);
+          // 如果右子树存在且右子树比左子树更小，则最小的index是右子树
+          if(this.data[rightIndex] && this.compare(this.data[rightIndex], this.data[smallerChildIndex])<0){
+            smallerChildIndex = rightIndex
+          }
+
+          // 最小的index值比父级小则交换
+          if(this.compare(this.data[smallerChildIndex],this.data[i]) < 0){
+            const smallVal = this.data[smallerChildIndex];
+            this.data[smallerChildIndex] = this.data[i];
+            this.data[i] = smallVal;
+          }else{
+            break;
+          }
+          i = smallerChildIndex;
+        }
+
+        return min;
+      }
+
+      give(v){
+        this.data.push(v)
+        let i = this.data.length - 1;
+        while(i > 0 && this.compare(v,this.data[this.getParentIndex(i)]) < 0){
+          const parent = this.getParentIndex(i);
+          this.data[i] = this.data[parent];
+          this.data[parent] = v;
+          i = parent;
+        }
+      }
+
+      get length(){
+        return this.data.length
+      }
+    }
+
+    const dataStract = {
+      queue: QueueSorted,
+      a_star_array: AStarArraySorted,
+      a_star_binary_heap: AStarBinaryHeapSorted,
+    }
+    /**
+     * 寻路算法
+     */
+    async function findPath(map,start,end){
+      const table = Object.create(map);
+      const stractClass = dataStract[stractSelect];
+    
+      const stract = new stractClass([start],(a,b) => distance(a) - distance(b));
+
+      mapContainer.children[start[0]*100+start[1]].style.borderColor = 'red';
+      mapContainer.children[end[0]*100+end[1]].style.borderColor = 'red';
+
+      const insert = async (x,y, pre) => {
+        if((x >= 100 || x < 0 )||(y>=100 || y<0)){
+          return;
+        }
+        if(table[x*100+y]){
+          return;
+        }
+        // await sleep(0);
+        table[x*100+y] = pre;
+        mapContainer.children[x*100+y].style.backgroundColor = 'lightgreen';
+        stract.give([x,y])
+      }
+
+      const distance = (point) => 
+         (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2
+      
+      while(stract.length){
+        let [x, y] = stract.take();
+        if(x === end[0] && y === end[1]){
+          const path = [];
+          // 返回路径坐标
+          while(x !== start[0] || y !== start[1]){
+            path.push([x,y]);
+            await sleep(30);
+            mapContainer.children[x*100+y].style.backgroundColor = 'purple';
+            [x,y] = table[x*100+y];
+          }
+          mapContainer.children[start[0]*100+start[1]].style.backgroundColor = 'purple';
+          count.innerHTML = `${path.length}个`
+          return path;
+        }
+        // 上
+        await insert(x,y-1,[x,y]);
+        // 下
+        await insert(x,y+1,[x,y]);
+        // 左
+        await insert(x+1,y,[x,y]);
+        // 右
+        await insert(x-1,y,[x,y]);
+
+         // 右上
+        await insert(x+1,y-1,[x,y]);
+        // 右下
+        await insert(x+1,y+1,[x,y]);
+        // 左上
+        await insert(x-1,y-1,[x,y]);
+        // 右下
+        await insert(x-1,y+1,[x,y]);
+      }
+      return null
+    }
+  </script>
+</body>
+</html>

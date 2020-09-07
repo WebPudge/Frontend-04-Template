@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <label>表达式：<input type="text" name="expression" id="expression"/></label>
+  <button onclick="showDom.innerHTML = JSON.stringify(parser(input.value),null,2);">start</button>
+  <div>AST结果：<pre id="result"></pre></div>
+</body>
+<script>
+const input = document.getElementById('expression');
+const showDom = document.getElementById('result');
+
+const tokenReg = /([0-9\.]+)|([ \t]+)|([\r\n]+)|(\*)|(\/)|(\+)|(\-)/g
+const dictionary = ['number', 'whitespace','line','*','/','+','-'];
+
+function tokenize(source){
+  let result = null;
+  const tokens = [];
+  while(true) {
+    lastIndex = tokenReg.lastIndex;
+    result = tokenReg.exec(source);
+
+    if(!result || tokenReg.lastIndex - lastIndex > result[0].length){
+      break
+    }
+   
+    const token = {
+      type: null,
+      value: null
+    }
+    for(let i = 1 ; i< result.length; i++){
+      if(result[i]){
+        token.type = dictionary[i - 1]
+      }
+    }
+    token.value = result[0];
+    tokens.push(token)
+  }
+  tokens.push({
+    type: 'EOF'
+  })
+  return tokens;
+}
+
+function expression(tokens){
+  if(tokens[0].type === 'additiveExpression' && tokens[1] && tokens[1].type === 'EOF'){
+    const node = {
+      type: 'expression',
+      children: []
+    }
+    node.children.push(tokens.shift());
+    tokens.shift(node);
+    tokens.push(node)
+    return node;
+  }
+  additiveExpression(tokens);
+  return expression(tokens);
+}
+
+// 加减运算
+function additiveExpression(tokens){
+  if(tokens[0].type === 'mutiplicativeExporession'){
+    const node = {
+      type: 'additiveExpression',
+      children: [tokens[0]]
+    }
+    tokens[0] = node;
+    return additiveExpression(tokens);
+  }
+  if(tokens[0].type === 'additiveExpression'&&tokens[1]&&['+','-'].includes(tokens[1].type)){
+    const node = {
+      type: 'additiveExpression',
+      operator: tokens[1].type,
+      children: []
+    }
+    node.children.push(tokens.shift());
+    node.children.push(tokens.shift());
+    // 第三个token有可能是乘法调用一次
+    mutiplicativeExporession(tokens);
+    node.children.push(tokens.shift());
+    tokens.unshift(node);
+    return mutiplicativeExporession(tokens)
+  }
+  if(tokens[0].type === 'additiveExpression'){
+    return tokens[0]
+  }
+  mutiplicativeExporession(tokens);
+  return additiveExpression(tokens)
+}
+
+// 乘除运算
+function mutiplicativeExporession(tokens){
+  if(tokens[0].type === 'number'){
+    const node = {
+      type: 'mutiplicativeExporession',
+      children: [tokens[0]]
+    }
+    tokens[0] = node;
+    return mutiplicativeExporession(tokens);
+  }
+  if(tokens[0].type === 'mutiplicativeExporession'&&tokens[1]&&['*','/'].includes(tokens[1].type)){
+    const node = {
+      type: 'mutiplicativeExporession',
+      operator: tokens[1].type,
+      children: []
+    }
+    node.children.push(tokens.shift());
+    node.children.push(tokens.shift());
+    node.children.push(tokens.shift());
+    tokens.unshift(node);
+    return mutiplicativeExporession(tokens)
+  }
+  if(tokens[0].type === 'mutiplicativeExporession'){
+    return tokens[0]
+  }
+}
+
+function parser(source){
+  const tokens = tokenize(source);
+  const realTokens = []
+  for(let i = 0, len=tokens.length; i< len; i++){
+    if(!['whitespace','line'].includes(tokens[i].type)){
+      realTokens.push(tokens[i])
+    }
+  }
+  
+  return expression(realTokens);
+}
+
+</script>
+</html>
