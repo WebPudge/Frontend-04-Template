@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <h1>KMP</h1>
+  <label>字符串：<input type="text" id="source" ></label>
+  <label>子串：<input type="text" id="pattern" ></label>
+  <button onclick="isSub.innerHTML = kmp(sourceDom.value,patternDom.value)? '是':'否';">匹配</button>
+  <div>是否匹配子串：<span id="isSub"></span></div>
+  <script>
+    const isSub = document.getElementById('isSub');
+    const sourceDom = document.getElementById('source');
+    const patternDom = document.getElementById('pattern');
+    
+    function kmp(source,pattern){
+      // a b c d a b c e
+      // 0 0 0 0 0 1 2 3
+
+      // a b a b a b c
+      // 0 0 0 1 2 3 4
+      
+      // a a b a a a c
+      // 0 0 1 0 1 2 2
+      // 计算跳转表格
+      const table = new Array(pattern.length).fill(0);
+
+      let i = 1, j = 0;
+      while(i<pattern.length){
+        // 两个位置相等
+        if(pattern[i] === pattern[j]){
+          i++,j++;
+          // 完全重复的时候最后一位不添加超出了长度 如 abcabc
+          if(i >= pattern.length){
+            break;
+          }
+          table[i] = j;
+        }else{
+          if(j > 0){
+            j = table[j]
+          }else{
+            i++;
+          }
+        }
+      }
+
+      // 字符的串的匹配
+      i = 0, j = 0;
+      while(i < source.length){
+        if(source[i] === pattern[j]){
+          i++,j++;
+        }else{
+          if(j > 0){
+            j = table[j]
+          }else{
+            i++;
+          }
+        }
+        if(j === pattern.length){
+          return true
+        }
+      }
+      return false
+    }
+  </script>
+</body>
+</html>

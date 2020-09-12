@@ -7,5 +7,92 @@
 </head>
 <body>
   <h1>字典树</h1>
+  <button onclick="randomTrie()">插入随机字符</button>
+  <button onclick="show()">显示字典树</button>
+  <div>重复数：<span id="count"></span><br>重复最多的单词：<span id="word"></span></pre>
+  <pre id="trie"></pre>
+  <script>
+    const trieDom = document.getElementById('trie');
+    const countDom = document.getElementById('count');
+    const wordDom = document.getElementById('word');
+    const $ = Symbol('$');
+    class Trie {
+      constructor(){
+        this.root = Object.create(null);
+      }
+
+      // 插入词
+      insert(text){
+        let node = this.root
+        for(let c of text){
+          if(!node[c]){
+            node[c] = Object.create(null);
+          }
+          node = node[c];
+        }
+        if(!($ in node)){
+          node[$] = 0;
+        }
+        node[$]++;
+      }
+
+      // 获取最多的词
+      most(){
+        let max = 0;
+        let maxWord = null;
+        const stack = [];
+        stack.push({
+          key:'',
+          node: this.root
+        });
+        while(stack.length){
+          const {key,node} = stack.pop();
+          if(node[$]&&node[$] > max){
+              max = node[$];
+              maxWord = key;
+          }
+          for(let k in node){
+            stack.push({
+              key:key+k,
+              node: node[k]
+            })
+          }
+        }
+        return {
+          count: max,
+          word: maxWord
+        }
+      }
+    }
+
+    let trie = null;
+
+    function show(){
+      console.log(trie)
+      trieDom.innerHTML = JSON.stringify(trie.root,null,2)
+      const { count, word} = trie.most();
+      countDom.innerHTML = count;
+      wordDom.innerHTML = word;
+    }
+
+    // 随机词
+    function randomWord(length){
+      let s = ''
+      for (let i = 0; i < length; i++) {
+          s += String.fromCharCode(Math.random() * 26 + 'a'.charCodeAt(0));      
+      }
+      return s
+    }
+
+    // 随机trie树
+    function randomTrie(){
+      const randomTrie = new Trie();
+      const length = Math.floor(Math.random()*1000)
+      for(let i = 0; i < length; i++){
+        randomTrie.insert(randomWord(2))
+      }
+      trie = randomTrie
+    }
+  </script>
 </body>
 </html>

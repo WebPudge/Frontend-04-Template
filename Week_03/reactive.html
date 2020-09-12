@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <h1>Reactive</h1>
+  <label>R：<input type="range" min="0" max="255" id="R" ></label>
+  <label>G：<input type="range" min="0" max="255" id="G" ></label>
+  <label>B：<input type="range" min="0" max="255" id="B" ></label>
+  <div id="board" style="width: 100px;height: 100px;"></div>
+  <script>
+    const RDom = document.getElementById('R');
+    const GDom = document.getElementById('G');
+    const BDom = document.getElementById('B');
+    const board = document.getElementById('board');
+    
+    const callbacks = new Map();
+    const reactivties = new Map();
+    let usedReactivties = [];
+
+    const obj = {
+      r:0,
+      g:0,
+      b:0
+    }
+    const po = reactive(obj)
+    effect(() => {
+      RDom.value = po.r
+    })
+    effect(() => {
+      GDom.value = po.g
+    })
+    effect(() => {
+      BDom.value = po.b
+    })
+
+    effect(() =>{
+      board.style.backgroundColor = `rgb(${po.r},${po.g},${po.b})`
+    })
+
+    RDom.addEventListener('input', event => po.r = event.target.value)
+    GDom.addEventListener('input', event => po.g = event.target.value)
+    BDom.addEventListener('input', event => po.b = event.target.value)
+
+    function effect(callback){
+      usedReactivties = [];
+      callback();
+      for(let [obj, prop] of usedReactivties){
+        if(!callbacks.has(obj)){
+          callbacks.set(obj,new Map())
+        }
+        if(!callbacks.get(obj).has(prop)){
+          callbacks.get(obj).set(prop,[]);
+        }
+        callbacks.get(obj).get(prop).push(callback);
+      }
+    }
+
+    function reactive(object){
+      if(reactivties.has(object)){
+        return reactivties.get(object)
+      }
+      let proxy = new Proxy(object,{
+        get(obj,prop){
+          usedReactivties.push([obj,prop]);
+          // a.b.c的情况
+          if(typeof obj[prop] === 'object'){
+            return reactive(obj[prop])
+          }
+          return obj[prop]
+        },
+        set(obj,prop,val){
+          obj[prop] = val;
+          if(callbacks.has(obj)&&callbacks.get(obj).has(prop)){
+            for(let callback of callbacks.get(obj).get(prop)){
+              callback();
+            }
+          }
+          return obj[prop];
+        }
+      })
+      // 保存代理对象否则获取不到对应的callback
+      reactivties.set(object,proxy);
+      return proxy
+    }
+  </script>
+</body>
+</html>
