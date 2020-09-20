@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  .container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 700px;
+    margin: 16px auto;
+  }
+  #map {
+    margin: 16px auto;
+    line-height: 7px;
+  }
+  .cell {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border: 1px solid #aaa;
+    vertical-align: top;
+  }
+  .edit-board {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+  }
+  .button {
+    margin-top: 16px;
+  }
+</style>
+<body>
+  <h1>四则运算BNF</h1>
+  <ul>
+    <li>
+      &lt;MultiplicativeExpression&gt; ::= &lt;Number&gt; | <br/>
+      &lt;MultiplicativeExpression&gt; "*" (&lt;Number&gt; | &lt;ParenthesesExpression&gt; ) | <br/>
+      &lt;MultiplicativeExpression&gt; "/" (&lt;Number&gt; | &lt;ParenthesesExpression&gt; ) | <br/>
+    </li>
+    <li>
+      &lt;AddtiveExpression&gt; ::= &lt;MultiplicativeExpression&gt; | <br/>
+      &lt;AddtiveExpression&gt; "+" (&lt;MultiplicativeExpression&gt; | &lt;ParenthesesExpression&gt;) | <br/>
+      &lt;AddtiveExpression&gt; "-" (&lt;MultiplicativeExpression&gt; | &lt;ParenthesesExpression&gt;) | <br/>
+    </li>
+    <li>
+      &lt;ParenthesesExpression&gt; ::=  "(" &lt;AddtiveExpression&gt; ")"
+    </li>
+    <li>
+      &lt;Expression&gt; ::= &lt;AddtiveExpression&gt;
+    </li>
+  </ul>
+</body>
+</html>
