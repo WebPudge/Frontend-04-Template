@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://gw.alipayobjects.com/os/lib/antv/g6/3.7.3/dist/g6.min.js"></script>
+</head>
+<body>
+  <h1>Realm</h1>
+  <div id="realm"></div>
+  <script>
+    const realmDom = document.getElementById('realm')
+    function getRealm(){
+     
+      const set = new Set();
+      const objects = [
+          'eval',
+          'isFinite',
+          'isNaN',
+          'parseFloat',
+          'parseInt',
+          'decodeURI',
+          'decodeURIComponent',
+          'encodeURI',
+          'encodeURIComponent',
+          'Array',
+          'Date',
+          'RegExp',
+          'Promise',
+          'Proxy',
+          'Map',
+          'WeakMap',
+          'Set',
+          'WeakSet',
+          'Function',
+          'Boolean',
+          'String',
+          'Number',
+          'Symbol',
+          'Object',
+          'Error',
+          'EvalError',
+          'RangeError',
+          'ReferenceError',
+          'SyntaxError',
+          'TypeError',
+          'URIError',
+          'ArrayBuffer',
+          'SharedArrayBuffer',
+          'DataView',
+          'Float32Array',
+          'Float64Array',
+          'Int8Array',
+          'Int16Array',
+          'Int32Array',
+          'Uint8Array',
+          'Uint16Array',
+          'Uint32Array',
+          'Uint8ClampedArray',
+          'Atomics',
+          'JSON',
+          'Math',
+          'Reflect'];
+      objects.forEach(o => set.add(o));
+      let realm = {
+        id: 'realm',
+        children:[],
+      }
+      for(let i = 0; i < objects.length; i++) {
+          const key = objects[i];
+          const o = window[key];
+          let child = {
+            id: key,
+            children:[],
+          }
+          for(let p of Object.getOwnPropertyNames(o)) {
+              const d = Object.getOwnPropertyDescriptor(o, p)
+              if( (d.value !== null && typeof d.value === "object") || (typeof d.value === "function"))
+                  if(!set.has(p)){
+                    set.add(p); 
+                    child.children.push({id: p,children:[]});
+                  }
+          }
+          realm.children.push(child)
+      }
+      return realm
+    }
+  
+    function renderRealm(realm){
+      // 创建 G6 图实例
+      const graph = new G6.TreeGraph({
+        container: 'realm', // 指定图画布的容器 id
+        // 画布宽高
+        width: realmDom.scrollWidth,
+        height: 768,
+        modes: {
+          default: [
+            {
+              type: 'compactBox',
+              onChange(item, collapsed) {
+                const icon = item.get('group').findByClassName('collapse-icon');
+                if (collapsed) {
+                  icon.attr('symbol', EXPAND_ICON);
+                } else {
+                  icon.attr('symbol', COLLAPSE_ICON);
+                }
+              },
+            },
+            'drag-canvas',
+            'zoom-canvas',
+          ],
+          
+      },
+      defaultNode: {
+        size: 26,
+        anchorPoints: [
+          [0, 0.5],
+          [1, 0.5],
+        ],
+        style: {
+          fill: '#C6E5FF',
+          stroke: '#5B8FF9',
+        },
+      },
+      defaultEdge: {
+        type: 'cubic-horizontal',
+        style: {
+          stroke: '#A3B1BF',
+        },
+      },
+      layout: {
+        type: 'indented',
+        direction: 'LR',
+        dropCap: false,
+        indent: 200,
+      },
+      });
+
+
+      graph.node(function (node) {
+      let position = 'right';
+      let rotate = 0;
+      if (!node.children) {
+        position = 'bottom';
+        rotate = Math.PI / 2;
+      }
+      return {
+        label: node.id,
+        labelCfg: {
+          position,
+          offset: 5,
+          style: {
+            rotate,
+            textAlign: 'start',
+          },
+        },
+      };
+    });
+
+      // 读取数据
+      graph.data(realm);
+      // 渲染图
+      graph.render();
+      graph.fitView();
+    }
+
+    renderRealm(getRealm());
+  
+  </script>
+</body>
+</html>
