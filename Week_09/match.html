@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <h1>选择器匹配（暂时只支持class、id、tag，复合选择支持空格和>）</h1>
+  <label>选择器：<input type="text" id="selector" ></label>
+  <span>匹配元素所在位置：body > div > p > span.class-test#id-test</span>
+  <code></code>
+  <button onclick="isMatch.innerHTML = match(selectorDom.value,matchDom)? '是':'否';">匹配</button>
+  <div>是否匹配子串：<span id="isMatch"></span></div>
+  <div>
+  <p><span class="class-test" id="id-test" style="color:#f00;">匹配元素</span></p>
+  </div>
+  <script>
+    const isMatch = document.getElementById('isMatch');
+    const selectorDom = document.getElementById('selector');
+    const matchDom = document.getElementById('id-test');
+
+
+    // 复杂选择器匹配
+    function matchSelector(selector,element){
+     const selectorParts = selector.match(/#[a-zA-Z\-]+|.[a-zA-Z\-]+|[a-zA-Z]+/g)||[];
+    
+     for(let part of selectorParts){
+       console.dir(element)
+      if(part.charAt(0) === '#'){
+        if(element.id !== part.replace('#','')){
+          return false
+        }
+      }else if(part.charAt(0) === '.'){
+        if(element.className !== part.replace('.','')){
+          return false
+        }
+      }else{
+        if(element.tagName.toLowerCase() !== part){
+          return false
+        }
+      }
+     }
+     return true;
+    }
+    
+    // 复合选择器匹配
+    function match(selectors, element){
+      // 是否需要直系亲属
+      let isParent = false;
+      const selectorParts = []
+      const selector = selectors.trim().split(/\s+/).forEach(str => {
+        if(str === '>'){
+          isParent = true
+        }else if(isParent){
+          selectorParts.push({
+            selector: str,
+            isParent:true
+          })
+          isParent = false;
+        }else {
+          selectorParts.push({
+            selector: str,
+            isParent:false
+          })
+          isParent = false;
+        }
+      });
+      selectorParts.reverse();
+      let isParentMatch = false;
+      let i = 0;
+      let currentEl = element
+      while(currentEl){
+        const currentSelector = selectorParts[i];
+        if(!currentSelector){
+          break;
+        }
+        if(matchSelector(currentSelector.selector, currentEl)){
+          i++;
+          
+        }else if(isParentMatch){
+          return false
+        }
+        isParentMatch = currentSelector.isParent;
+        currentEl = currentEl.parentElement;
+      }
+      if(i >= selectorParts.length){
+        return true
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>
