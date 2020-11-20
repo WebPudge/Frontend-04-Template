@@ -2,7 +2,8 @@
   "name": "frontend-04-template",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "private": true,
+  "workspaces": [ "week_12", "week_13", "week_14", "week_15"],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
