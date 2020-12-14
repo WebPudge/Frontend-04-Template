@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
-  "workspaces": [ "week_12", "week_13", "week_14", "week_15"],
+  "workspaces": [ "week_12", "week_13", "week_14", "week_15", "generator-yang"],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
