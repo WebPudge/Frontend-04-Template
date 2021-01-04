@@ -1,4 +1,4 @@
-const VueLoaderPlugin = require('../../../../Week_17/generators-yang/generators/app/templates/node_modules/vue-loader/lib/plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
@@ -20,6 +20,15 @@ module.exports = {
           'vue-style-loader',
           'css-loader'
         ]
+      },
+      {
+        test: /\.js$/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets:['@babel/preset-env']
+          },
+        },
       }
     ]
   },
